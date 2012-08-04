@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+    
+<head>
+    <title>Responsive demo</title>
+    <script type="text/javascript" src="js/ditt.buildImage.js"></script>
+</head>
+
+<body>
+    <script>
+        // set up an event handler for resizing
+        if (typeof(window.attachEvent) == 'object') {
+             window.attachEvent('onresize', ditt.buildImage.resizeImage);
+        } else {
+             window.addEventListener('resize', ditt.buildImage.resizeImage, false);
+        }
+    </script>
+    
+    <noscript data-src="images/testing-960.jpg" data-src-954="images/testing-720.jpg" data-src-714="images/testing-480.jpg" data-src-474="images/testing-320.jpg" alt="A/B testing using Google Analytics" title="A/B testing using Google Analytics">
+        <img src="images/testing-320.jpg" alt="A/B testing using Google Analytics" title="A/B testing using Google Analytics"/>
+    </noscript>
+</body>
+
+</html>
