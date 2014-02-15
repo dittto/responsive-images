@@ -1,7 +1,10 @@
+/*jslint browser: true, continue: true, plusplus: true, regexp: true, sloppy: true */
+
 /**
  * A container for the responsiveImage functions
  */
-responsiveImage = {
+var responsiveImage = {
+
     /**
      * The default config
      */
@@ -11,10 +14,10 @@ responsiveImage = {
         default: {
             sizes: [320, 480, 720, 100000],
             fileNames: {320: 320, 480: 480, 720: 720, 100000: 100000},
-            imagePath: "^(.+\-)(\d+)(\.[a-z]+)$",
+            imagePath: "^(.+\\-)(\\d+)(\\.[a-z]+)$",
             imagePathSizeField: 2,
             lazy: true,
-            lazyPrePx: -200
+            lazyPrePx: 200
         }
     },
 
@@ -40,12 +43,20 @@ responsiveImage = {
     allowLazyUpdate: true,
 
     /**
+     * A flag that when set to true allows the scroll to be updated. This is
+     * because there's currently a bug in Chrome 33 (at least) where when the
+     * page refreshes, the scroll doesn't reset, but the getBoundingClientRect
+     * calculates as if the page does
+     */
+    forcedScrollUpdate: true,
+
+    /**
      * Inits the class. Calculates the scrollbar width and resizes the images
      * for the first time
      *
      * @param config An object containing updates to the default config
      */
-    Init: function(config) {
+    Init: function (config) {
         // update the config
         this.config = this.UpdateConfig(config);
 
@@ -60,8 +71,8 @@ responsiveImage = {
      * Inits the events for resize and for scroll. There is no load event for
      * scroll as it's triggered by resize anyway
      */
-    InitEvents: function() {
-        if (typeof(window.attachEvent) === "object") {
+    InitEvents: function () {
+        if (typeof (window.attachEvent) === "object") {
             window.attachEvent("onresize", this.Resize);
             window.attachEvent("onload", this.Resize);
             window.attachEvent("onscroll", this.Scroll);
@@ -77,39 +88,45 @@ responsiveImage = {
      *
      * @param config An object containing updates to the default config
      */
-    UpdateConfig: function(config) {
+    UpdateConfig: function (config) {
         // init vars
-        var key, sizeKey, fileNames = {};
+        var key, sizeKey, fileNames = {}, sortFunction;
 
         // update config with the default options if missing default
-        if (typeof config !== "object") {config = {};}
-        if (typeof config.default === "undefined") {config.default = this.config.default;}
+        if (typeof config !== "object") {config = {}; }
+        if (config.default === undefined) {config.default = this.config.default; }
+
+        // init the sort function for numerical ordering
+        sortFunction = function (first, second) {return first - second; };
 
         // update all configs if missing data, and reorder the config sizes
         // into numeric order
         for (key in config) {
-            if (typeof config[key] === "object") {
+            if (config.hasOwnProperty(key) && typeof config[key] === "object") {
                 // build the fileNames object if it's missing but sizes have been set
-                if (typeof config[key].fileNames === "undefined" && typeof config[key].sizes !== "undefined") {
+                if (config[key].fileNames === undefined && config[key].sizes !== undefined) {
                     for (sizeKey in config[key].sizes) {
-                        fileNames[config[key].sizes[sizeKey]] = config[key].sizes[sizeKey];
+                        if (config[key].sizes.hasOwnProperty(sizeKey)) {
+                            fileNames[config[key].sizes[sizeKey]] = config[key].sizes[sizeKey];
+                        }
                     }
                     config[key].fileNames = fileNames;
                 }
 
                 // make sure no fields are missing
-                if (typeof config[key].sizes === "undefined") {config[key].sizes = this.config.default.sizes;}
-                if (typeof config[key].fileNames === "undefined") {config[key].fileNames = this.config.default.fileNames;}
-                if (typeof config[key].lazy === "undefined") {config[key].lazy = this.config.default.lazy;}
-                if (typeof config[key].lazyPrePx === "undefined") {config[key].lazyPrePx = this.config.default.lazyPrePx;}
-                if (typeof config[key].imagePath === "undefined") {config[key].imagePath = this.config.default.imagePath;}
-                if (typeof config[key].imagePathSizeField === "undefined") {config[key].imagePathSizeField = this.config.default.imagePathSizeField;}
-                config[key].sizes.sort(function(first, second) {return first - second;});
+                if (config[key].sizes === undefined) {config[key].sizes = this.config.default.sizes; }
+                if (config[key].fileNames === undefined) {config[key].fileNames = this.config.default.fileNames; }
+                if (config[key].imagePath === undefined) {config[key].imagePath = this.config.default.imagePath; }
+                if (config[key].imagePathSizeField === undefined) {config[key].imagePathSizeField = this.config.default.imagePathSizeField; }
+                if (config[key].lazy === undefined) {config[key].lazy = this.config.default.lazy; }
+                if (config[key].lazyPrePx === undefined) {config[key].lazyPrePx = this.config.default.lazyPrePx; }
+                config[key].sizes.sort(sortFunction);
             }
         }
 
-        // override the class name if specified
-        if (typeof config.className === "undefined") {config.className = this.config.className;}
+        // override the class name and lazy delay if specified
+        if (config.className === undefined) {config.className = this.config.className; }
+        if (config.lazyDelay === undefined) {config.lazyDelay = this.config.lazyDelay; }
 
         return config;
     },
@@ -122,26 +139,28 @@ responsiveImage = {
      * @return null|object Either null if the responsive class can't be found,
      * or an object containing the config options
      */
-    GetOptions: function(className) {
+    GetOptions: function (className) {
         // init vars
         var selected = "", classes, i, option, regex, namespace;
 
         // split the classname into classes
         classes = className.split(" ");
         for (i in classes) {
-            // trim the spacing from the option
-            option = classes[i].replace(/^\s+|\s+$/g, "");
+            if (classes.hasOwnProperty(i)) {
+                // trim the spacing from the option
+                option = classes[i].replace(/^\s+|\s+$/g, "");
 
-            // if there is the responsive class, then use the default settings
-            if (selected === "" && option === this.config.className) {
-                selected = "default";
-            }
+                // if there is the responsive class, then use the default settings
+                if (selected === "" && option === this.config.className) {
+                    selected = "default";
+                }
 
-            // if there are namespaced options set, retrieve those
-            regex = new RegExp("^" + this.config.className + "-", "g");
-            namespace = option.replace(regex, "");
-            if (typeof this.config[namespace] !== "undefined") {
-                selected = namespace;
+                // if there are namespaced options set, retrieve those
+                regex = new RegExp("^" + this.config.className + "-", "g");
+                namespace = option.replace(regex, "");
+                if (this.config[namespace] !== undefined) {
+                    selected = namespace;
+                }
             }
         }
 
@@ -152,9 +171,9 @@ responsiveImage = {
      * Calculates the width of the scrollbar as some browsers include in the
      * width of the available screen space
      */
-    CalcScrollWidth: function() {
+    CalcScrollWidth: function () {
         // calculates the width of the scrollbar for this browser
-        if (this.scrollbarWidth == 0) {
+        if (this.scrollbarWidth === 0) {
             // build a div to measure and force scrollbars to be on
             var div = document.createElement("div");
             div.style.width = "200px";
@@ -164,7 +183,7 @@ responsiveImage = {
             // if the div has both an offset and client width, then the
             // difference is the scrollbar width. Also includes a hack to get
             // around webkit calculating the width wrongly
-            if (div.offsetWidth && div.clientWidth && !RegExp(" AppleWebKit/").test(navigator.userAgent)) {
+            if (div.offsetWidth && div.clientWidth && !(new RegExp(" AppleWebKit/").test(navigator.userAgent))) {
                 this.scrollbarWidth = div.offsetWidth - div.clientWidth;
             }
 
@@ -209,13 +228,13 @@ responsiveImage = {
      * Handles resizing all images. This is done by building an additional img
      * tag as a sibling of the noscript tag
      */
-    Rebuild: function() {
+    Rebuild: function () {
         // init vars
         var scripts, i, script, options, image, prefix, foundImage, newImage;
 
         // loop through all the noscript scripts
         scripts = document.getElementsByTagName("noscript");
-        for (i = 0; i < scripts.length; i ++) {
+        for (i = 0; i < scripts.length; i++) {
             // if no options can be found for this noscript then skip this one
             script = scripts[i];
             options = this.GetOptions(script.className);
@@ -244,21 +263,21 @@ responsiveImage = {
             foundImage = document.getElementById(script.getAttribute(prefix + "image-id"));
             if (foundImage) {
                 // if the image is the same size then ignore it
-                if (foundImage.getAttribute(prefix + "used-size") == image.size) {
+                if (foundImage.getAttribute(prefix + "used-size") === image.size) {
                     continue;
-                } else {
-                    // otherwise remove the image so it can be rebuilt, and remove the lazy-loaded flag
-                    foundImage.parentNode.removeChild(foundImage);
-                    script.removeAttribute(prefix + "lazy-loaded");
                 }
+
+                // otherwise remove the image so it can be rebuilt, and remove the lazy-loaded flag
+                foundImage.parentNode.removeChild(foundImage);
+                script.removeAttribute(prefix + "lazy-loaded");
             }
 
             // build the image as either it hasn't been created yet, or it's
             // been removed for being the wrong size
             newImage = document.createElement("img");
-            if (typeof image.alt !== "undefined") {newImage.setAttribute("alt", image.alt);}
-            if (typeof image.title !== "undefined") {newImage.setAttribute("title", image.title);}
-            if (typeof image.class !== "undefined") {newImage.setAttribute("class", image.class);}
+            if (image.alt !== undefined) {newImage.setAttribute("alt", image.alt); }
+            if (image.title !== undefined) {newImage.setAttribute("title", image.title); }
+            if (image.class !== undefined) {newImage.setAttribute("class", image.class); }
             newImage.setAttribute("id", script.getAttribute(prefix + "image-id"));
             newImage.setAttribute(prefix + "used-size", image.size);
 
@@ -288,16 +307,18 @@ responsiveImage = {
      * @return object An object containing the size of the boundary, and the
      * src of the related path.
      */
-    GetBoundary: function(element, options) {
+    GetBoundary: function (element, options) {
         // init vars
         var closestSize, size, testElement, foundElement, src, matches, i, imageSrc = "";
 
         // get the closest size specified without going over
         closestSize = options.sizes[options.sizes.length - 1];
         for (size in options.sizes) {
-            size = parseInt(options.sizes[size]);
-            if (this.screenWidth <= size && closestSize >= size) {
-                closestSize = size;
+            if (options.sizes.hasOwnProperty(size)) {
+                size = parseInt(options.sizes[size], 10);
+                if (this.screenWidth <= size && closestSize >= size) {
+                    closestSize = size;
+                }
             }
         }
 
@@ -312,7 +333,7 @@ responsiveImage = {
         matches = /^(.+\-)(\d+)(\.[a-z]+)$/.exec(src);
 
         // build the image src
-        for (i = 1; i < matches.length; i ++) {
+        for (i = 1; i < matches.length; i++) {
             if (i === options.imagePathSizeField) {
                 imageSrc += options.fileNames[closestSize];
             } else {
@@ -329,9 +350,9 @@ responsiveImage = {
      *
      * @return undefined
      */
-    Scroll: function() {
+    Scroll: function () {
         // init vars
-        var noscripts, i, screenHeight, prefix, rect, image, $this = responsiveImage;
+        var noscripts, i, screenHeight, prefix, rect, image, moveScrollInterval, $this = responsiveImage;
 
         // drop out if not allowed to run
         if ($this.allowLazyUpdate === false) {
@@ -339,10 +360,8 @@ responsiveImage = {
         }
         $this.allowLazyUpdate = false;
 
-        console.log("sda");
-
         // get the current screen height
-        screenHeight = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight;
+        screenHeight = window.innerHeight || document.documentElement.clientHeight;
 
         // get all noscripts that have the lazy attribute marked
         if (typeof document.getElementsByClassName === "function") {
@@ -351,9 +370,22 @@ responsiveImage = {
             noscripts = document.getElementsByTagName("noscript");
         }
 
+        // force the page to scroll slightly if it's already scrolled. This
+        // gets round a bug in getBoundingClientRect in Chrome 33
+        if ($this.forcedScrollUpdate) {
+            moveScrollInterval = window.setInterval(function () {
+                if (document.documentElement.scrollTop !== 0) {
+                    window.clearInterval(moveScrollInterval);
+                    $this.allowLazyUpdate = true;
+                    $this.forcedScrollUpdate = false;
+                    $this.Scroll();
+                }
+            }, 50);
+        }
+
         // loop through the noscripts looking for those that need lazy-loading
         prefix = "data-" + $this.config.className + "-";
-        for (i = 0; i < noscripts.length; i ++) {
+        for (i = 0; i < noscripts.length; i++) {
             // look for those that are lazy but not lazy-loaded
             if (noscripts[i].getAttribute(prefix + "lazy") && !noscripts[i].getAttribute(prefix + "lazy-loaded")) {
                 // get the bounding box of the image
@@ -361,7 +393,7 @@ responsiveImage = {
 
                 // if the offset bounding box is visible, then show the image
                 // and mark the noscript as lazy-loaded
-                if (rect.top - parseInt(noscripts[i].getAttribute(prefix + "lazy")) <= screenHeight) {
+                if (rect.top - parseInt(noscripts[i].getAttribute(prefix + "lazy"), 10) <= screenHeight) {
                     image = document.getElementById(noscripts[i].getAttribute(prefix + "image-id"));
                     image.setAttribute("src", image.getAttribute(prefix + "lazy-src"));
                     noscripts[i].setAttribute(prefix + "lazy-loaded", "1");
@@ -370,8 +402,7 @@ responsiveImage = {
         }
 
         // fire a timeout to prevent this function being run too often
-        console.log($this.config.lazyDelay);
-        window.setTimeout(function() {
+        window.setTimeout(function () {
             $this.allowLazyUpdate = true;
         }, $this.config.lazyDelay);
     }
