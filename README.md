@@ -49,7 +49,7 @@ Finally, you need to make sure your images exist. This method uses images of dif
 Additional features
 ===================
 
-Use <noscript> tags
+Use noscript tags
 -------------------
 
 If you need to have your images available to users who don't use javascript, for instance if your analytics tell you that users are using your site but not using javascript, then you can do the following below. This is not enabled by default as the major browsers now auto-load images they find in noscript tags.
@@ -135,7 +135,7 @@ The namespace options available are:
  - lazyPrePx - This is the number of pixels the browser window can be above an image before it starts loading. This allows you to start loading images eariler than the user getting to them when scrolling. You can also give this a negative number to see the lazy-loading in action.
 
 
-<responsive-image> options
+responsive-image options
 --------------------------
 
 If you choose to use the `<noscript>` tag, then all you need to do is place a normal `<img>` tag inside it with a `src`, `class`, `alt`, and `title`. These will then be used for the new image. If you are using the default `<responsive-image>` on the other hand, things are bit more complex. The following is a list of the available arguments.
