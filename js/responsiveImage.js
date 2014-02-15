@@ -1,5 +1,7 @@
 /*jslint browser: true, continue: true, plusplus: true, regexp: true, sloppy: true */
 
+document.createElement("responsive-image");
+
 /**
  * A container for the responsiveImage functions
  */
@@ -11,6 +13,7 @@ var responsiveImage = {
     config: {
         className: "responsive",
         lazyDelay: 200,
+        useNoScript: false,
         default: {
             sizes: [320, 480, 720, 100000],
             fileNames: {320: 320, 480: 480, 720: 720, 100000: 100000},
@@ -124,9 +127,10 @@ var responsiveImage = {
             }
         }
 
-        // override the class name and lazy delay if specified
+        // override the global config options
         if (config.className === undefined) {config.className = this.config.className; }
         if (config.lazyDelay === undefined) {config.lazyDelay = this.config.lazyDelay; }
+        if (config.useNoScript === undefined) {config.useNoScript = this.config.useNoScript; }
 
         return config;
     },
@@ -233,7 +237,7 @@ var responsiveImage = {
         var scripts, i, script, options, image, prefix, foundImage, newImage;
 
         // loop through all the noscript scripts
-        scripts = document.getElementsByTagName("noscript");
+        scripts = document.getElementsByTagName(this.config.useNoScript ? "noscript" : "responsive-image");
         for (i = 0; i < scripts.length; i++) {
             // if no options can be found for this noscript then skip this one
             script = scripts[i];
@@ -263,7 +267,7 @@ var responsiveImage = {
             foundImage = document.getElementById(script.getAttribute(prefix + "image-id"));
             if (foundImage) {
                 // if the image is the same size then ignore it
-                if (foundImage.getAttribute(prefix + "used-size") === image.size) {
+                if (parseInt(foundImage.getAttribute(prefix + "used-size"), 10) === parseInt(image.size, 10)) {
                     continue;
                 }
 
@@ -324,10 +328,15 @@ var responsiveImage = {
 
         // get the src of the image in the node. Do this via an extra element
         // as html inside noscript tags can't be easily read
-        testElement = document.createElement("div");
-        testElement.innerHTML = element.childNodes[0].data;
-        foundElement = testElement.getElementsByTagName("img")[0];
-        src = foundElement.src;
+        if (this.config.useNoScript) {
+            testElement = document.createElement("div");
+            testElement.innerHTML = element.childNodes[0].data;
+            foundElement = testElement.getElementsByTagName("img")[0];
+            src = foundElement.src;
+        } else {
+            foundElement = element;
+            src = element.getAttribute('data-src');
+        }
 
         // calculate the new path of the closest size
         matches = /^(.+\-)(\d+)(\.[a-z]+)$/.exec(src);
@@ -341,7 +350,12 @@ var responsiveImage = {
             }
         }
 
-        return {size: closestSize, src: imageSrc, alt: foundElement.alt, title: foundElement.title, class: foundElement.className};
+        return {
+            size: closestSize,
+            src: imageSrc,
+            alt: foundElement.getAttribute('alt'),
+            title: foundElement.getAttribute('title'),
+            class: foundElement.getAttribute('data-class')};
     },
 
     /**
@@ -367,7 +381,7 @@ var responsiveImage = {
         if (typeof document.getElementsByClassName === "function") {
             noscripts = document.getElementsByClassName($this.config.className);
         } else {
-            noscripts = document.getElementsByTagName("noscript");
+            noscripts = document.getElementsByTagName(this.config.useNoScript ? "noscript" : "responsive-image");
         }
 
         // force the page to scroll slightly if it's already scrolled. This
@@ -379,6 +393,8 @@ var responsiveImage = {
                     $this.allowLazyUpdate = true;
                     $this.forcedScrollUpdate = false;
                     $this.Scroll();
+                } else {
+                    $this.forcedScrollUpdate = false;
                 }
             }, 50);
         }
@@ -404,6 +420,7 @@ var responsiveImage = {
         // fire a timeout to prevent this function being run too often
         window.setTimeout(function () {
             $this.allowLazyUpdate = true;
+            $this.Scroll();
         }, $this.config.lazyDelay);
     }
 };

@@ -1,25 +1,37 @@
 <!doctype html>
 <html>
-    
+
 <head>
     <title>Responsive demo</title>
+    <script type="text/javascript" src="js/responsiveImage.js"></script>
+    <style>
+        .responsive {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
-    <noscript data-src="images/testing-960.jpg" data-src-954="images/testing-720.jpg" data-src-714="images/testing-480.jpg" data-src-474="images/testing-320.jpg" alt="A/B testing using Google Analytics" title="A/B testing using Google Analytics">
-        <img src="images/testing-320.jpg" alt="A/B testing using Google Analytics" title="A/B testing using Google Analytics"/>
-    </noscript>
 
-    <script type="text/javascript" src="js/ditt.buildImage.js"></script>
-    <script>
-        // set up an event handler for resizing
-        if (typeof(window.attachEvent) == 'object') {
-            window.attachEvent('onresize', ditt.buildImage.resizeImage);
-        } else {
-            window.addEventListener('resize', ditt.buildImage.resizeImage, false);
+<div style="height: 1000px; width: 200px; background: brown;">
+
+</div>
+
+<responsive-image class="responsive" data-src="images/testing-320.jpg" alt="A/B testing using Google Analytics" title="A/B testing using Google Analytics" data-class="image-class"></responsive-image>
+
+<div style="height: 1000px; width: 200px; background: lawngreen;">
+
+</div>
+
+<script>
+    responsiveImage.Init({
+        default: {
+            sizes: [474, 714, 954, 100000],
+            fileNames: {474: 320, 714: 480, 954: 720, 100000: 960},
+            lazyPrePx: 200
         }
-        ditt.buildImage.init();
-    </script>
+    });
+</script>
 </body>
 
 </html>
