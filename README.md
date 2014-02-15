@@ -1,7 +1,7 @@
 responsiveImage.js
 ==================
 
-This is a standalone js file that given a simple config, will handle responsive images and lazy-loading.
+This is a standalone js file that given a simple config, will handle responsive images and lazy-loading. Gzipped it's only 1.8KB!
 
 Why is this useful?
 -------------------
